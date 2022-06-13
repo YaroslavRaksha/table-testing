@@ -458,8 +458,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     let calendar = document.getElementById('calendar');
     let mobileSelect = document.getElementById('mobile-select');
     calendar.setAttribute('value', selectedDay);
-
-    selectMobileOption('buy-dollar');
+    if(window.innerWidth < 590) {
+        selectMobileOption('buy-dollar');
+    }
     mobileSelect.onchange = (e) => {
         selectMobileOption(e.target.value)
     };
