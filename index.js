@@ -424,7 +424,8 @@ async function setTable(data) {
             saleEuroTable.innerHTML = saleEuroTable.innerHTML + row;
         });
     }
-
+    
+    setTotalChanges(data);
     if(data["existence-morning"]) {
        await callbackExistence(data)
     }
