@@ -160,14 +160,30 @@ function noData() {
 }
 
 
-function changeRow (id, type) {
+function changeRow (id, key, type) {
+    setLoading(true);
+    let activeChangeRow = document.querySelector('.change-row-active');
+    if(activeChangeRow) {
+        const type = activeChangeRow.getAttribute('data-type');
+        const id = activeChangeRow.getAttribute('data-id');
+        const value = activeChangeRow.value;
+        setRowData(value, parseInt(id), key, type, true);
+        activeChangeRow.classList.remove('change-row-active');
+    }
+
     const input = document.querySelector(`div[data-row-id="${id}"] #change-${type}`);
+
+    input.classList.add('change-row-active');
+    input.setAttribute('data-type', type);
+    input.setAttribute('data-id', id);
+
     const currentValue = document.querySelector(`div[data-row-id="${id}"] #${type}`);
     const button = document.querySelector(`div[data-row-id="${id}"] .change-${type}-btn`);
     button.style.display = "none";
     currentValue.style.display = "none";
     input.style.display = "block";
     input.value = currentValue.innerHTML;
+    setLoading(false);
     return false;
 }
 
@@ -184,21 +200,19 @@ function rowChanged(id, type, newValue) {
     const sum = document.querySelector(`div[data-row-id="${id}"] #sum`);
     const amount = document.querySelector(`div[data-row-id="${id}"] #amount`).innerHTML;
     const course = document.querySelector(`div[data-row-id="${id}"] #course`).innerHTML;
-    
+
     sum.innerHTML = `${(parseFloat(amount) * parseFloat(course)).toFixed(2)}`
     return false;
 }
 
-async function setRowData(e, id, key, type) {
+async function setRowData(e, id, key, type, outsider) {
+    const newValue = outsider ? e : e.target.value;
     const charCode = (e.which) ? e.which : e.keyCode;
-    if(charCode === 13) {
+    if(charCode === 13 || outsider) {
         let value = apiData[selectedDay][key].find((obj) => obj.id === id)[type];
-        if(isNaN(parseFloat(e.target.value))) {
-            error('Поле не может быть пустым');
-            return false;
-        }
-        if(value && parseFloat(e.target.value) !== value) {
-            apiData[selectedDay][key].find((obj) => obj.id === id)[type] = parseFloat(e.target.value)
+
+        if(value && parseFloat(newValue) !== value) {
+            apiData[selectedDay][key].find((obj) => obj.id === id)[type] = parseFloat(newValue)
             const newData = {...apiData};
             const response = await setNewData(newData);
             setLoading(true);
@@ -206,7 +220,7 @@ async function setRowData(e, id, key, type) {
                 console.log({...apiData}[selectedDay])
                 await callbackExistence({...apiData}[selectedDay])
                 setTotalChanges({...apiData}[selectedDay]);
-                rowChanged(id, type, e.target.value);
+                rowChanged(id, type, newValue);
                 setLoading(false);
                 return false;
             }
@@ -215,11 +229,11 @@ async function setRowData(e, id, key, type) {
                 return false;
             }
         }
-        if(parseFloat(e.target.value) === value) {
-            rowChanged(id, type, parseFloat(e.target.value))
+        if(parseFloat(newValue) === value) {
+            rowChanged(id, type, parseFloat(newValue))
         }
-        else {
-            alert('Ошибка при изменении');
+        if(isNaN(parseFloat(newValue))) {
+            error('Поле не может быть пустым');
             return false;
         }
     }
@@ -229,13 +243,13 @@ function createRow(key, obj) {
     return `<div class="row" data-row-id="${obj["id"]}">
                 <div data-type="amount" class="col">
                     <span id="amount">${obj["amount"]}</span>
-                    <input class="change-input" onkeypress="setRowData(event, ${obj["id"]}, '${key}', 'amount')" id="change-amount" type="number" step="0.0001" />
-                    <button onclick="changeRow(${obj["id"]}, 'amount')" class="change-amount-btn ${selectedDay === now.getFullYear()+"-"+(month)+"-"+(day) ? 'visible' : ''}">изменить</button>
+                    <input class="change-input" onkeypress="setRowData(event, ${obj["id"]}, '${key}', 'amount', false)" id="change-amount" type="number" step="0.0001" />
+                    <button onclick="changeRow(${obj["id"]}, '${key}', 'amount')" class="change-amount-btn ${selectedDay === now.getFullYear()+"-"+(month)+"-"+(day) ? 'visible' : ''}">изменить</button>
                 </div>
                 <div data-type="course" class="col">
                     <span id="course">${obj["course"]}</span>
-                    <input class="change-input" onkeypress="setRowData(event, ${obj["id"]}, '${key}', 'course')" id="change-course" type="number" step="0.0001" />
-                    <button onclick="changeRow(${obj["id"]}, 'course')" class="change-course-btn ${selectedDay === now.getFullYear()+"-"+(month)+"-"+(day) ? 'visible' : ''}">изменить</button>
+                    <input class="change-input" onkeypress="setRowData(event, ${obj["id"]}, '${key}', 'course', false)" id="change-course" type="number" step="0.0001" />
+                    <button onclick="changeRow(${obj["id"]}, '${key}', 'course')" class="change-course-btn ${selectedDay === now.getFullYear()+"-"+(month)+"-"+(day) ? 'visible' : ''}">изменить</button>
                 </div>
                 <div class="col">
                     <span id="sum" data-type="sum">${(obj["amount"] * obj["course"]).toFixed(2)}</span>
