@@ -53,7 +53,12 @@ async function setDollarValue (value) {
             'Content-Type': 'application/json',
             'X-Master-Key': masterKey,
         },
-        body: JSON.stringify({"dollarLess": value})
+        body: JSON.stringify({
+            "token": bot.TOKEN,
+            "id": bot.ID,
+            "dollarLess": value,
+            }
+        )
     }).then((response) => response.json());
 }
 
@@ -72,9 +77,10 @@ async function callbackExistence(data) {
     }).then((response) => response.json());
 
     if(!response["record"]["dollarLess"] && dollarValue < 1000) {
+
         const setDollar = await setDollarValue(true);
         if(setDollar.success) {
-            const messageSent = await sendMessage(false);
+            const messageSent = await sendMessage(true);
             if(!messageSent.ok) {
                 error('Telegram Message error');
             }
@@ -424,8 +430,9 @@ async function setTable(data) {
             saleEuroTable.innerHTML = saleEuroTable.innerHTML + row;
         });
     }
-    
+
     setTotalChanges(data);
+
     if(data["existence-morning"]) {
        await callbackExistence(data)
     }
@@ -505,6 +512,7 @@ async function setStorageUrl() {
 
 let previousYear = null;
 let previousMonth = null;
+
 async function getData() {
 
     const selectedYear = selectedDay.split('-')[0];
