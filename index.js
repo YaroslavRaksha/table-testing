@@ -13,7 +13,7 @@ const sendMessage = async (dollarLess) => {
         error('telegram problem');
         return false;
     }
-    return await fetch(`https://api.telegram.org/bot${bot.TOKEN}/sendMessage?chat_id=${bot.ID}&text=Доллар+${dollarLess ? 'меньше' : 'больше'}+1000`);
+    return await fetch(`https://api.telegram.org/bot${bot.TOKEN}/sendMessage?chat_id=${bot.ID}&text=Доллар+${dollarLess ? 'меньше' : 'больше'}+10000`);
 }
 
 const buyDollarTable = document.getElementById('buy-dollar');
@@ -94,7 +94,7 @@ async function callbackExistence(data) {
         }
     }).then((response) => response.json());
 
-    if(!response["record"]["dollarLess"] && dollarValue < 1000) {
+    if(!response["record"]["dollarLess"] && dollarValue < 10000) {
         const setDollar = await setDollarValue(true);
         if(setDollar.success) {
             const messageSent = await sendMessage(false);
@@ -103,7 +103,7 @@ async function callbackExistence(data) {
             }
         }
     }
-    if(response["record"]["dollarLess"] && dollarValue > 1000)  {
+    if(response["record"]["dollarLess"] && dollarValue > 10000)  {
         const setDollar = await setDollarValue(false);
         if(setDollar.success) {
             const messageSent = await sendMessage(false);
