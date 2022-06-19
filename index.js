@@ -175,10 +175,17 @@ function rowChanged(id, type, newValue) {
     const input = document.querySelector(`div[data-row-id="${id}"] #change-${type}`);
     const currentValue = document.querySelector(`div[data-row-id="${id}"] #${type}`);
     const button = document.querySelector(`div[data-row-id="${id}"] .change-${type}-btn`);
+
     button.style.display = null;
     currentValue.style.display = null;
     currentValue.innerHTML = newValue;
     input.style.display = null;
+
+    const sum = document.querySelector(`div[data-row-id="${id}"] #sum`);
+    const amount = document.querySelector(`div[data-row-id="${id}"] #amount`).innerHTML;
+    const course = document.querySelector(`div[data-row-id="${id}"] #course`).innerHTML;
+    
+    sum.innerHTML = `${(parseFloat(amount) * parseFloat(course)).toFixed(2)}`
     return false;
 }
 
@@ -186,29 +193,34 @@ async function setRowData(e, id, key, type) {
     const charCode = (e.which) ? e.which : e.keyCode;
     if(charCode === 13) {
         let value = apiData[selectedDay][key].find((obj) => obj.id === id)[type];
-
+        if(isNaN(parseFloat(e.target.value))) {
+            error('Поле не может быть пустым');
+            return false;
+        }
         if(value && parseFloat(e.target.value) !== value) {
             apiData[selectedDay][key].find((obj) => obj.id === id)[type] = parseFloat(e.target.value)
             const newData = {...apiData};
             const response = await setNewData(newData);
             setLoading(true);
             if(!response?.message) {
+                console.log({...apiData}[selectedDay])
                 await callbackExistence({...apiData}[selectedDay])
                 setTotalChanges({...apiData}[selectedDay]);
                 rowChanged(id, type, e.target.value);
                 setLoading(false);
+                return false;
             }
             else {
                 alert('Ошибка при изменении');
-                rowChanged(id, type, parseFloat(e.target.value));
+                return false;
             }
         }
         if(parseFloat(e.target.value) === value) {
             rowChanged(id, type, parseFloat(e.target.value))
         }
-        if(!value) {
+        else {
             alert('Ошибка при изменении');
-            rowChanged(id, type, parseFloat(e.target.value))
+            return false;
         }
     }
 }
@@ -226,7 +238,7 @@ function createRow(key, obj) {
                     <button onclick="changeRow(${obj["id"]}, 'course')" class="change-course-btn ${selectedDay === now.getFullYear()+"-"+(month)+"-"+(day) ? 'visible' : ''}">изменить</button>
                 </div>
                 <div class="col">
-                    <span data-type="sum">${(obj["amount"] * obj["course"]).toFixed(2)}</span>
+                    <span id="sum" data-type="sum">${(obj["amount"] * obj["course"]).toFixed(2)}</span>
                     <span class="additional-block ${selectedDay === now.getFullYear()+"-"+(month)+"-"+(day) ? 'visible' : ''}">
                         <span class="time">${obj["time"]}</span>
                         <button onclick="deleteRow(${obj["id"]}, '${key}')" class="delete-row">удалить ряд</button>
@@ -242,7 +254,8 @@ async function addRow(isBuy, isDollar) {
     const inputCourse = document.querySelector(`#${currency} .${type} input[data-input="course"]`);
     const now = new Date();
 
-    if(inputSum?.value && inputCourse?.value) {
+
+    if(!isNaN(parseFloat(inputSum.value)) && !isNaN(parseFloat(inputCourse.value))) {
         let obj = {
             "id": Date.now(),
             "amount": parseFloat(inputSum.value),
