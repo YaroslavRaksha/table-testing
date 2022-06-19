@@ -13,7 +13,7 @@ const sendMessage = async (dollarLess) => {
         error('telegram problem');
         return false;
     }
-    return await fetch(`https://api.telegram.org/bot${bot.TOKEN}/sendMessage?chat_id=${bot.ID}&text=Доллар+${dollarLess ? 'меньше' : 'больше'}+10000`);
+    return await fetch(`https://api.telegram.org/bot${bot.TOKEN}/sendMessage?chat_id=${bot.ID}&text=Доллар+${dollarLess ? 'меньше' : 'больше'}+1000`);
 }
 
 const buyDollarTable = document.getElementById('buy-dollar');
@@ -46,29 +46,6 @@ async function setNewData(newData, storageId) {
     }).then((response) => response.json());
 }
 
-async function setExpanses() {
-    let value = parseInt(document.getElementById('expanses').value);
-    if(isNaN(value) || !(selectedDay === now.getFullYear()+"-"+(month)+"-"+(day))) {
-        error('Ошибка при выставлении расходов');
-        return false;
-    }
-    else {
-        const newData = apiData;
-        newData[selectedDay]["expenses"] = value;
-        setLoading(true);
-        const response = await setNewData(newData);
-        if(!response?.message) {
-            await callbackExistence(newData[selectedDay]);
-            setTotalChanges(newData[selectedDay]);
-            setLoading(false);
-            alert('Выставлено!');
-        }
-        else {
-            error('Ошибка. Расходы не выставлены');
-        }
-    }
-}
-
 async function setDollarValue (value) {
     return await fetch(url + '/62adc661449a1f38210eb394', {
         method: 'PUT',
@@ -94,7 +71,7 @@ async function callbackExistence(data) {
         }
     }).then((response) => response.json());
 
-    if(!response["record"]["dollarLess"] && dollarValue < 10000) {
+    if(!response["record"]["dollarLess"] && dollarValue < 1000) {
         const setDollar = await setDollarValue(true);
         if(setDollar.success) {
             const messageSent = await sendMessage(false);
@@ -103,7 +80,7 @@ async function callbackExistence(data) {
             }
         }
     }
-    if(response["record"]["dollarLess"] && dollarValue > 10000)  {
+    if(response["record"]["dollarLess"] && dollarValue > 1000)  {
         const setDollar = await setDollarValue(false);
         if(setDollar.success) {
             const messageSent = await sendMessage(false);
@@ -148,7 +125,6 @@ function noData() {
     buyEuroTable.innerHTML = null;
     saleDollarTable.innerHTML = null;
     saleEuroTable.innerHTML = null;
-    document.getElementById('expanses').value = "";
     document.querySelectorAll('.total .col').forEach((el) => {
         el.innerHTML = ""
     });
@@ -382,9 +358,6 @@ function getExistenceValue(object, currency) {
                 });
             }
         });
-        if(object["expenses"]) {
-            return  `${saleHryvnia - buyHryvnia - parseInt(object["expenses"])}`
-        }
         return `${saleHryvnia - buyHryvnia}`;
     }
 
@@ -411,18 +384,6 @@ function setExistence(object, currency) {
         document.querySelector(`#existing-current .${currency}`).innerHTML = `${parseInt(object["existence-morning"][`${currency}`]) + parseInt(existenceValue)}`;
         return false;
     }
-    else if(Object?.keys(apiData)?.length > 1) {
-        const orderedDates = {};
-        Object.keys(apiData).sort(function(a, b) {
-            return a.split('-').reverse().join('').localeCompare(b.split('-').reverse().join(''));
-        }).forEach(function(key) {
-            orderedDates[key] = apiData[key];
-        });
-        const arrayOfObjects = Object.values(orderedDates);
-        const lastObject = arrayOfObjects[arrayOfObjects.length - 2];
-        let existenceValue = getExistenceValue(lastObject, currency);
-        return parseInt(lastObject["existence-morning"][`${currency}`]) + parseInt(existenceValue);
-    }
     else {
         document.querySelector(`#existing-morning .${currency}`).innerHTML = "0";
         document.querySelector(`#existing-current .${currency}`).innerHTML = "0";
@@ -435,8 +396,6 @@ async function setTable(data) {
     buyEuroTable.innerHTML = null;
     saleDollarTable.innerHTML = null;
     saleEuroTable.innerHTML = null;
-
-    document.getElementById('expanses').value = data["expenses"] ? data["expenses"] : "";
 
     if(data["buy-dollar"]?.length > 0) {
         data["buy-dollar"].map((obj) => {
@@ -518,14 +477,7 @@ async function setStorageUrl() {
     const months = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "okt", "nov", "dec"];
 
     const selectedYear = selectedDay.split('-')[0];
-    const selectedMonth = parseInt(selectedDay.split('-')[1].replace('0', '')) - 1;
-
-    if(previousSelectedYear === selectedYear && previousSelectedMonth === selectedMonth) {
-        return binId;
-    }
-
-    previousSelectedYear = selectedYear;
-    previousSelectedMonth = selectedMonth;
+    const selectedMonth = parseInt(selectedDay.split('-')[1]) - 1;
 
     const response = await fetch(url + '/62af311e402a5b38022f1d09/latest', {
         method: 'GET',
@@ -544,23 +496,31 @@ async function setStorageUrl() {
     }
 
     if(!responseUrl) {
-        if(selectedMonth !== parseInt(month.replace('0', '')) - 1) {
-            error('Нет значений за месяц ' + months[selectedMonth]);
-            return false;
-        }
         alert('Выставите наличие на утро!')
         const binId = checkForBinId(responseData, selectedYear, months[selectedMonth]);
         return binId;
     }
 }
 
+let previousYear = null;
+let previousMonth = null;
 async function getData() {
-    setLoading(true);
 
-    if(apiData) {
+    const selectedYear = selectedDay.split('-')[0];
+    const selectedMonth = parseInt(selectedDay.split('-')[1]) - 1;
+
+    previousYear = selectedYear;
+    previousMonth = selectedMonth;
+
+    setLoading(true);
+    if(apiData && selectedMonth === previousMonth && selectedYear === previousYear) {
         if(apiData[selectedDay]) {
             setLoading(false);
             return apiData[selectedDay];
+        }
+        if(!apiData[selectedDay]) {
+            setLoading(false);
+            return noData();
         }
     }
 
