@@ -2,19 +2,13 @@ const url = "https://api.jsonbin.io/v3/b";
 let binId = "";
 
 let bot = {
-    TOKEN: "",
-    ID: ""
+    token: "",
+    id: "",
+    dollarLess: false,
+    totalSend: false,
 }
+
 let masterKey = "";
-
-
-const sendMessage = async (dollarLess) => {
-    if(bot.TOKEN === "" || bot.ID === "") {
-        error('telegram problem');
-        return false;
-    }
-    return await fetch(`https://api.telegram.org/bot${bot.TOKEN}/sendMessage?chat_id=${bot.ID}&text=Доллар+${dollarLess ? 'меньше' : 'больше'}+1000`);
-}
 
 const buyDollarTable = document.getElementById('buy-dollar');
 const saleDollarTable = document.getElementById('sale-dollar');
@@ -36,6 +30,7 @@ function setLoading(value) {
 }
 
 async function setNewData(newData, storageId) {
+    console.log('getting')
     return fetch(url + `/${storageId ? storageId : binId }`, {
         method: 'PUT',
         headers: {
@@ -46,19 +41,27 @@ async function setNewData(newData, storageId) {
     }).then((response) => response.json());
 }
 
-async function setDollarValue (value) {
+async function getBotData (pass) {
+    console.log('getting')
+    return await fetch(url + '/62adc661449a1f38210eb394/latest', {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Master-Key': pass,
+        }
+    }).then((response) => response.json());
+}
+
+
+async function setBotData (data) {
+    console.log('getting')
     return await fetch(url + '/62adc661449a1f38210eb394', {
         method: 'PUT',
         headers: {
             'Content-Type': 'application/json',
             'X-Master-Key': masterKey,
         },
-        body: JSON.stringify({
-            "token": bot.TOKEN,
-            "id": bot.ID,
-            "dollarLess": value,
-            }
-        )
+        body: JSON.stringify(data),
     }).then((response) => response.json());
 }
 
@@ -66,35 +69,6 @@ async function callbackExistence(data) {
     setExistence(data, 'dollar');
     setExistence(data, 'euro');
     setExistence(data, 'hryvnia');
-
-    let dollarValue = parseInt(document.querySelector(`#existing-current .dollar`).innerHTML);
-    const response = await fetch(url + '/62adc661449a1f38210eb394/latest', {
-        method: 'GET',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-Master-Key': masterKey,
-        }
-    }).then((response) => response.json());
-
-    if(!response["record"]["dollarLess"] && dollarValue < 1000) {
-
-        const setDollar = await setDollarValue(true);
-        if(setDollar.success) {
-            const messageSent = await sendMessage(true);
-            if(!messageSent.ok) {
-                error('Telegram Message error');
-            }
-        }
-    }
-    if(response["record"]["dollarLess"] && dollarValue > 1000)  {
-        const setDollar = await setDollarValue(false);
-        if(setDollar.success) {
-            const messageSent = await sendMessage(false);
-            if(!messageSent.ok) {
-                error('Telegram Message error');
-            }
-        }
-    }
 }
 
 function changeTab(isDollar) {
@@ -199,7 +173,6 @@ async function setRowData(e, id, key, type, outsider) {
             const response = await setNewData(newData);
             setLoading(true);
             if(!response?.message) {
-                console.log({...apiData}[selectedDay])
                 await callbackExistence({...apiData}[selectedDay])
                 setTotalChanges({...apiData}[selectedDay]);
                 rowChanged(id, type, newValue);
@@ -272,6 +245,48 @@ async function addRow(isBuy, isDollar) {
     }
 }
 
+async function sendTelegramMessage(text) {
+    const response = await fetch(`https://api.telegram.org/bot${bot.token}/sendMessage?chat_id=${bot.id}&text=${text}`);
+    const data = await response.json()
+    return data;
+}
+
+async function checkForTelegramTotal() {
+
+    let dollarBuy = document.querySelector('#dollar .buy div[data-total="course"]').innerHTML;
+    let dollarSale = document.querySelector('#dollar .sale div[data-total="course"]').innerHTML
+    let dollarTotalBuy = document.querySelector('#dollar .buy div[data-total="amount"]').innerHTML
+
+    let euroBuy = document.querySelector('#euro .buy div[data-total="course"]').innerHTML;
+    let euroSale = document.querySelector('#euro .sale div[data-total="course"]').innerHTML;
+    let euroTotalBuy = document.querySelector('#euro .buy div[data-total="amount"]').innerHTML;
+
+    dollarBuy = dollarBuy ? parseFloat(dollarBuy).toFixed(2) : 0;
+    dollarSale = dollarSale ? parseFloat(dollarSale).toFixed(2) : 0;
+    dollarTotalBuy = dollarTotalBuy ? parseFloat(dollarTotalBuy).toFixed(2) : 0;
+    euroBuy = euroBuy ? parseFloat(euroBuy).toFixed(2) : 0;
+    euroSale = euroSale ? parseFloat(euroSale).toFixed(2) : 0;
+    euroTotalBuy = euroTotalBuy ? parseFloat(euroTotalBuy).toFixed(2) : 0;
+
+    let output = (((dollarSale - dollarBuy) * dollarTotalBuy) + ((euroSale - euroBuy) * euroTotalBuy) - 1600).toFixed(2);
+    bot.totalSend = true;
+
+    const message = await sendTelegramMessage("Выручка: " + output);
+    if(message.ok) {
+        const response = await setBotData(bot);
+        if(response.message) {
+            return false;
+        }
+        else {
+            return true;
+        }
+    }
+    else {
+        return false;
+    }
+
+}
+
 function generateTotal(type, currency, arr) {
     let totalAmount = null;
     let averageCourse = null;
@@ -282,9 +297,37 @@ function generateTotal(type, currency, arr) {
         totalSum += obj["amount"] * obj["course"];
     });
     averageCourse = (averageCourse / arr.length).toFixed(4);
+
     document.querySelector(`#${currency} .${type} div[data-total="amount"]`).innerHTML = `${parseFloat(totalAmount).toFixed(2)}`;
     document.querySelector(`#${currency} .${type} div[data-total="course"]`).innerHTML = `${averageCourse}`;
     document.querySelector(`#${currency} .${type} div[data-total="sum"]`).innerHTML = `${parseFloat(totalSum).toFixed(2)}`;
+}
+
+async function checkForTelegramDollarLess(value) {
+
+    console.log(bot.dollarLess, value);
+    if(bot.dollarLess && value > 10000) {
+        bot.dollarLess = false;
+        const response = await setBotData(bot);
+        if(!response.message) {
+            const message = await sendTelegramMessage("Доллар+больше+10000");
+            console.log(message);
+            if(!message.ok) {
+                console.log('Error in telegram message')
+            }
+        }
+    }
+    if(!bot.dollarLess && value < 10000) {
+        bot.dollarLess = true;
+        const response = await setBotData(bot);
+        if(!response.message) {
+            const message = await sendTelegramMessage("Доллар+меньше+10000");
+            console.log(message);
+            if(!message.ok) {
+                console.log('Error in telegram message')
+            }
+        }
+    }
 }
 
 function setTotalChanges(obj) {
@@ -301,6 +344,31 @@ function setTotalChanges(obj) {
     if(obj && obj["sale-euro"]?.length > 0) {
         generateTotal('sale', 'euro', obj["sale-euro"]);
     }
+
+    setTimeout(() => {
+        if(selectedDay === now.getFullYear()+"-"+(month)+"-"+(day)) {
+            const dollar = document.querySelector('#existing-current .dollar').innerHTML;
+            if(dollar) {
+                const dollarCheck = checkForTelegramDollarLess(parseInt(dollar))
+            }
+            if(now.getHours() >= 17 && !bot.totalSend) {
+                const check = checkForTelegramTotal();
+                if(!check) {
+                    console.log('Error in sending telegram message')
+                }
+            }
+            if(now.getHours() < 17 && bot.totalSend) {
+                bot.totalSend = false;
+                const response = setBotData(bot);
+                if(!response.message) {
+                    bot.totalSend = true;
+                }
+                if(response.message) {
+                    console.log('Error in sending telegram message')
+                }
+            }
+        }
+    }, 0)
 }
 
 function handleAddRow() {
@@ -384,6 +452,7 @@ function getExistenceValue(object, currency) {
 function setExistence(object, currency) {
     document.querySelector(`#existing-morning .${currency}`).innerHTML = "";
     document.querySelector(`#existing-current .${currency}`).innerHTML = "";
+
     if(object["existence-morning"]) {
         let existenceValue = getExistenceValue(object, currency);
         document.querySelector(`#existing-morning .${currency}`).innerHTML = `${parseInt(object["existence-morning"][`${currency}`])}`;
@@ -442,6 +511,7 @@ async function setTable(data) {
 async function checkForBinId(data, year, month) {
     let binName = `${year}-${month}`;
 
+    console.log('getting')
     const response = await fetch(url, {
         method: 'POST',
         headers: {
@@ -487,6 +557,7 @@ async function setStorageUrl() {
     const selectedYear = selectedDay.split('-')[0];
     const selectedMonth = parseInt(selectedDay.split('-')[1]) - 1;
 
+    console.log('getting')
     const response = await fetch(url + '/62af311e402a5b38022f1d09/latest', {
         method: 'GET',
         headers: {
@@ -541,6 +612,7 @@ async function getData() {
     }
     binId = storageURL;
 
+    console.log('getting')
     const response = await fetch(url + `/${binId}/latest`, {
         method: 'GET',
         headers: {
@@ -676,17 +748,13 @@ async function checkForPass() {
         }
     }
     else {
-        const response = await fetch(url + '/62adc661449a1f38210eb394/latest', {
-            method: 'GET',
-            headers: {
-                'Content-type': 'application/json',
-                'X-Master-Key': pass,
-            }
-        }).then((response) => response.json());
+        const response = await getBotData(pass);
         if(!response?.message) {
             localStorage.setItem('masterKey', pass);
-            bot.TOKEN = response["record"]["token"];
-            bot.ID = response["record"]["id"];
+            bot.token = response["record"]["token"];
+            bot.id = response["record"]["id"];
+            bot.dollarLess = response["record"]["dollarLess"];
+            bot.totalSend = response["record"]["totalSend"];
             masterKey = pass;
         }
         else {
