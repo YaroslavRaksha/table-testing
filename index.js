@@ -30,7 +30,6 @@ function setLoading(value) {
 }
 
 async function setNewData(newData, storageId) {
-    console.log('getting')
     return fetch(url + `/${storageId ? storageId : binId }`, {
         method: 'PUT',
         headers: {
@@ -42,7 +41,6 @@ async function setNewData(newData, storageId) {
 }
 
 async function getBotData (pass) {
-    console.log('getting')
     return await fetch(url + '/62adc661449a1f38210eb394/latest', {
         method: 'GET',
         headers: {
@@ -54,7 +52,6 @@ async function getBotData (pass) {
 
 
 async function setBotData (data) {
-    console.log('getting')
     return await fetch(url + '/62adc661449a1f38210eb394', {
         method: 'PUT',
         headers: {
@@ -305,13 +302,11 @@ function generateTotal(type, currency, arr) {
 
 async function checkForTelegramDollarLess(value) {
 
-    console.log(bot.dollarLess, value);
     if(bot.dollarLess && value > 10000) {
         bot.dollarLess = false;
         const response = await setBotData(bot);
         if(!response.message) {
             const message = await sendTelegramMessage("Доллар+больше+10000");
-            console.log(message);
             if(!message.ok) {
                 console.log('Error in telegram message')
             }
@@ -322,7 +317,6 @@ async function checkForTelegramDollarLess(value) {
         const response = await setBotData(bot);
         if(!response.message) {
             const message = await sendTelegramMessage("Доллар+меньше+10000");
-            console.log(message);
             if(!message.ok) {
                 console.log('Error in telegram message')
             }
@@ -510,8 +504,7 @@ async function setTable(data) {
 
 async function checkForBinId(data, year, month) {
     let binName = `${year}-${month}`;
-
-    console.log('getting')
+    
     const response = await fetch(url, {
         method: 'POST',
         headers: {
@@ -556,8 +549,7 @@ async function setStorageUrl() {
 
     const selectedYear = selectedDay.split('-')[0];
     const selectedMonth = parseInt(selectedDay.split('-')[1]) - 1;
-
-    console.log('getting')
+    
     const response = await fetch(url + '/62af311e402a5b38022f1d09/latest', {
         method: 'GET',
         headers: {
@@ -611,8 +603,7 @@ async function getData() {
         return false;
     }
     binId = storageURL;
-
-    console.log('getting')
+    
     const response = await fetch(url + `/${binId}/latest`, {
         method: 'GET',
         headers: {
