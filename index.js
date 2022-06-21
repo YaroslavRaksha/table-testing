@@ -361,13 +361,13 @@ function setTotalChanges(obj) {
                     console.log('Error in sending telegram message')
                 }
             }
-            if(now.getHours() >= 17 && !bot.totalSend) {
+            if(now.getHours() >= 18 && !bot.totalSend) {
                 const check = checkForTelegramTotal();
                 if(!check) {
                     console.log('Error in sending telegram message')
                 }
             }
-            if(now.getHours() < 17 && bot.totalSend) {
+            if(now.getHours() < 18 && bot.totalSend) {
                 bot.totalSend = false;
                 const response = setBotData(bot);
                 if(!response.message) {
