@@ -302,6 +302,16 @@ function generateTotal(type, currency, arr) {
 
 async function checkForTelegramDollarValue(value) {
 
+    if(bot.dollarValue !== 3 && value > 10000) {
+        bot.dollarValue = 3;
+        const response = await setBotData(bot);
+        if (!response.message) {
+            const message = await sendTelegramMessage("Доллар+больше+10000");
+            if (!message.ok) {
+                console.log('Error in telegram message')
+            }
+        }
+    }
     if(bot.dollarValue !== 2 && value > 5000 && value < 10000) {
         bot.dollarValue = 2;
         const response = await setBotData(bot);
