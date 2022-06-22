@@ -566,15 +566,17 @@ async function checkForBinId(data, year, month) {
     }
 }
 
-
-let previousSelectedYear = null;
-let previousSelectedMonth = null;
-
 async function setStorageUrl() {
     const months = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "okt", "nov", "dec"];
 
-    const selectedYear = selectedDay.split('-')[0];
-    const selectedMonth = parseInt(selectedDay.split('-')[1]) - 1;
+    const selectedYear = selectedDay?.split('-')[0];
+
+    const selectedMonth = parseInt(selectedDay?.split('-')[1]) - 1;
+
+    if(!selectedYear && !selectedMonth || selectedYear === "") {
+        error('Ошибка в дате. Набрать Ярику +380951017683');
+        return false;
+    }
 
     const response = await fetch(url + '/62af311e402a5b38022f1d09/latest', {
         method: 'GET',
@@ -593,24 +595,23 @@ async function setStorageUrl() {
     }
 
     if(!responseUrl) {
-        alert('Выставите наличие на утро!')
+
+
         const binId = checkForBinId(responseData, selectedYear, months[selectedMonth]);
         return binId;
     }
 }
 
-let previousYear = null;
-let previousMonth = null;
+let previousYear =  selectedDay.split('-')[0];
+let previousMonth = parseInt(selectedDay.split('-')[1]) - 1;
 
 async function getData() {
 
     const selectedYear = selectedDay.split('-')[0];
     const selectedMonth = parseInt(selectedDay.split('-')[1]) - 1;
 
-    previousYear = selectedYear;
-    previousMonth = selectedMonth;
-
     setLoading(true);
+
     if(apiData && selectedMonth === previousMonth && selectedYear === previousYear) {
         if(apiData[selectedDay]) {
             setLoading(false);
@@ -621,6 +622,10 @@ async function getData() {
             return noData();
         }
     }
+
+    previousYear = selectedYear;
+    previousMonth = selectedMonth;
+
 
     const storageURL = await setStorageUrl();
 
