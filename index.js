@@ -286,14 +286,12 @@ async function checkForTelegramTotal() {
 
 function generateTotal(type, currency, arr) {
     let totalAmount = null;
-    let averageCourse = null;
     let totalSum = null
     arr.map((obj) => {
         totalAmount += obj["amount"];
-        averageCourse += obj["course"];
         totalSum += obj["amount"] * obj["course"];
     });
-    averageCourse = (averageCourse / arr.length).toFixed(4);
+    let averageCourse = (totalSum / totalAmount).toFixed(4);
 
     document.querySelector(`#${currency} .${type} div[data-total="amount"]`).innerHTML = `${parseFloat(totalAmount).toFixed(2)}`;
     document.querySelector(`#${currency} .${type} div[data-total="course"]`).innerHTML = `${averageCourse}`;
