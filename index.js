@@ -291,11 +291,13 @@ function generateTotal(type, currency, arr) {
         totalAmount += obj["amount"];
         totalSum += obj["amount"] * obj["course"];
     });
-    let averageCourse = (totalSum / totalAmount).toFixed(4);
+    let averageCourse = (totalSum / totalAmount)?.toFixed(4);
 
-    document.querySelector(`#${currency} .${type} div[data-total="amount"]`).innerHTML = `${parseFloat(totalAmount).toFixed(2)}`;
-    document.querySelector(`#${currency} .${type} div[data-total="course"]`).innerHTML = `${averageCourse}`;
-    document.querySelector(`#${currency} .${type} div[data-total="sum"]`).innerHTML = `${parseFloat(totalSum).toFixed(2)}`;
+    if(totalAmount && totalSum && averageCourse) {
+        document.querySelector(`#${currency} .${type} div[data-total="amount"]`).innerHTML = `${parseFloat(totalAmount).toFixed(2)}`;
+        document.querySelector(`#${currency} .${type} div[data-total="course"]`).innerHTML = `${averageCourse}`;
+        document.querySelector(`#${currency} .${type} div[data-total="sum"]`).innerHTML = `${parseFloat(totalSum).toFixed(2)}`;
+    }
 }
 
 async function checkForTelegramDollarValue(value) {
