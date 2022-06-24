@@ -265,10 +265,10 @@ async function checkForTelegramTotal() {
     euroSale = euroSale ? parseFloat(euroSale).toFixed(4) : 0;
     euroTotalBuy = euroTotalBuy ? parseFloat(euroTotalBuy).toFixed(4) : 0;
 
-    let output = (((dollarSale - dollarBuy) * dollarTotalBuy) + ((euroSale - euroBuy) * euroTotalBuy) - 1600).toFixed(2);
+    let output = (((dollarSale - dollarBuy) * dollarTotalBuy) + ((euroSale - euroBuy) * euroTotalBuy) - 1600).toFixed(2) / 2;
     bot.totalSend = true;
 
-    const message = await sendTelegramMessage("Выручка: " + output);
+    const message = await sendTelegramMessage("Прибыль: " + output);
     if(message.ok) {
         const response = await setBotData(bot);
         if(response.message) {
