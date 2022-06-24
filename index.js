@@ -258,12 +258,12 @@ async function checkForTelegramTotal() {
     let euroSale = document.querySelector('#euro .sale div[data-total="course"]').innerHTML;
     let euroTotalBuy = document.querySelector('#euro .buy div[data-total="amount"]').innerHTML;
 
-    dollarBuy = dollarBuy ? parseFloat(dollarBuy).toFixed(2) : 0;
-    dollarSale = dollarSale ? parseFloat(dollarSale).toFixed(2) : 0;
+    dollarBuy = dollarBuy ? parseFloat(dollarBuy).toFixed(4) : 0;
+    dollarSale = dollarSale ? parseFloat(dollarSale).toFixed(4) : 0;
     dollarTotalBuy = dollarTotalBuy ? parseFloat(dollarTotalBuy).toFixed(2) : 0;
-    euroBuy = euroBuy ? parseFloat(euroBuy).toFixed(2) : 0;
-    euroSale = euroSale ? parseFloat(euroSale).toFixed(2) : 0;
-    euroTotalBuy = euroTotalBuy ? parseFloat(euroTotalBuy).toFixed(2) : 0;
+    euroBuy = euroBuy ? parseFloat(euroBuy).toFixed(4) : 0;
+    euroSale = euroSale ? parseFloat(euroSale).toFixed(4) : 0;
+    euroTotalBuy = euroTotalBuy ? parseFloat(euroTotalBuy).toFixed(4) : 0;
 
     let output = (((dollarSale - dollarBuy) * dollarTotalBuy) + ((euroSale - euroBuy) * euroTotalBuy) - 1600).toFixed(2);
     bot.totalSend = true;
