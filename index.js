@@ -1,25 +1,39 @@
+{/* CHANGE TAB
+    ADD ROW
+*/}
+
 const url = "https://api.jsonbin.io/v3/b";
 let binId = "";
-
-let bot = {
-    token: "",
-    id: "",
-    dollarValue: null,
-    totalSend: false,
-}
 
 let masterKey = "";
 
 const buyDollarTable = document.getElementById('buy-dollar');
 const saleDollarTable = document.getElementById('sale-dollar');
+
 const buyEuroTable = document.getElementById('buy-euro');
 const saleEuroTable = document.getElementById('sale-euro');
+
+const buyZlotyTable = document.getElementById('buy-zloty');
+const saleZlotyTable = document.getElementById('sale-zloty');
+
 
 let apiData = null;
 let now = new Date();
 let day = ("0" + now.getDate()).slice(-2);
 let month = ("0" + (now.getMonth() + 1)).slice(-2);
 let selectedDay = now.getFullYear()+"-"+(month)+"-"+(day);
+
+
+function clearTables() {
+    buyDollarTable.innerHTML = null;
+    buyEuroTable.innerHTML = null;
+
+    saleDollarTable.innerHTML = null;
+    saleEuroTable.innerHTML = null;
+
+    buyZlotyTable.innerHTML = null;
+    saleZlotyTable.innerHTML = null;
+}
 
 function error(string) {
     return alert(string);
@@ -40,8 +54,8 @@ async function setNewData(newData, storageId) {
     }).then((response) => response.json());
 }
 
-async function getBotData (pass) {
-    return await fetch(url + '/62adc661449a1f38210eb394/latest', {
+async function getAccess (pass) {
+    return await fetch(url + '/63a42ad401a72b59f236d369/', {
         method: 'GET',
         headers: {
             'Content-Type': 'application/json',
@@ -51,61 +65,44 @@ async function getBotData (pass) {
 }
 
 
-async function setBotData (data) {
-    return await fetch(url + '/62adc661449a1f38210eb394', {
-        method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-Master-Key': masterKey,
-        },
-        body: JSON.stringify(data),
-    }).then((response) => response.json());
-}
-
 async function callbackExistence(data) {
     setExistence(data, 'dollar');
     setExistence(data, 'euro');
+    setExistence(data, 'zloty');
     setExistence(data, 'hryvnia');
 }
 
-function changeTab(isDollar) {
-    const dollarTable = document.getElementById('dollar');
-    const euroTable = document.getElementById('euro');
-    const toggleDollar = document.getElementById('toggle-dollar');
-    const toggleEuro = document.getElementById('toggle-euro');
-    if(isDollar) {
-        if(toggleDollar.classList.contains('selected')) {
-            return false;
-        }
-        else {
-            toggleDollar.classList.add('selected');
-            toggleEuro.classList.remove('selected')
-            dollarTable.classList.remove('hidden-table');
-            euroTable.classList.add('hidden-table');
-        }
+function changeTab(currency) {
+
+    const currencies = ['dollar', 'euro', 'zloty'];
+    const filteredCurrencies = currencies.filter((curr) => curr !== currency);
+    const activeTable = document.getElementById(currency);
+    const activeToggle = document.getElementById(`toggle-${currency}`);
+
+    if(activeToggle.classList.contains('selected')) {
+        return false;
     }
-    if(!isDollar) {
-        if(toggleEuro.classList.contains('selected')) {
-            return false;
-        }
-        else {
-            toggleEuro.classList.add('selected');
-            toggleDollar.classList.remove('selected');
-            euroTable.classList.remove('hidden-table');
-            dollarTable.classList.add('hidden-table');
-        }
+    else {
+        activeToggle.classList.add('selected');
+        activeTable.classList.remove('hidden-table');
+        filteredCurrencies.map((curr) => {
+            const notActiveTable = document.getElementById(curr);
+            const notActiveToggle = document.getElementById(`toggle-${curr}`);
+            notActiveToggle.classList.remove('selected');
+            notActiveTable.classList.add('hidden-table');
+        })
+        // for other toggle remove selected
+        // for other tables add hidden-table
     }
 }
 
 function noData() {
-    buyDollarTable.innerHTML = null;
-    buyEuroTable.innerHTML = null;
-    saleDollarTable.innerHTML = null;
-    saleEuroTable.innerHTML = null;
+    clearTables();
+
     document.querySelectorAll('.total .col').forEach((el) => {
         el.innerHTML = ""
     });
-    let arr = ['dollar', 'euro', 'hryvnia'];
+    let arr = ['dollar', 'euro', 'zloty', 'hryvnia'];
     arr.map((el) => {
         document.querySelector(`#existing-current .${el}`).innerHTML = "";
         document.querySelector(`#existing-morning .${el}`).innerHTML = "";
@@ -213,8 +210,7 @@ function createRow(key, obj) {
             </div>`
 }
 
-async function addRow(isBuy, isDollar) {
-    const currency = isDollar ? 'dollar' : 'euro';
+async function addRow(isBuy, currency) {
     const type = isBuy ? 'buy' : 'sale';
     const inputSum = document.querySelector(`#${currency} .${type} input[data-input="sum"]`);
     const inputCourse = document.querySelector(`#${currency} .${type} input[data-input="course"]`);
@@ -242,48 +238,6 @@ async function addRow(isBuy, isDollar) {
     }
 }
 
-async function sendTelegramMessage(text) {
-    const response = await fetch(`https://api.telegram.org/bot${bot.token}/sendMessage?chat_id=${bot.id}&text=${text}`);
-    const data = await response.json()
-    return data;
-}
-
-async function checkForTelegramTotal() {
-
-    let dollarBuy = document.querySelector('#dollar .buy div[data-total="course"]').innerHTML;
-    let dollarSale = document.querySelector('#dollar .sale div[data-total="course"]').innerHTML
-    let dollarTotalBuy = document.querySelector('#dollar .buy div[data-total="amount"]').innerHTML
-
-    let euroBuy = document.querySelector('#euro .buy div[data-total="course"]').innerHTML;
-    let euroSale = document.querySelector('#euro .sale div[data-total="course"]').innerHTML;
-    let euroTotalBuy = document.querySelector('#euro .buy div[data-total="amount"]').innerHTML;
-
-    dollarBuy = dollarBuy ? parseFloat(dollarBuy).toFixed(4) : 0;
-    dollarSale = dollarSale ? parseFloat(dollarSale).toFixed(4) : 0;
-    dollarTotalBuy = dollarTotalBuy ? parseFloat(dollarTotalBuy).toFixed(2) : 0;
-    euroBuy = euroBuy ? parseFloat(euroBuy).toFixed(4) : 0;
-    euroSale = euroSale ? parseFloat(euroSale).toFixed(4) : 0;
-    euroTotalBuy = euroTotalBuy ? parseFloat(euroTotalBuy).toFixed(4) : 0;
-
-    let output = (((dollarSale - dollarBuy) * dollarTotalBuy) + ((euroSale - euroBuy) * euroTotalBuy) - 1600).toFixed(2) / 2;
-    bot.totalSend = true;
-
-    const message = await sendTelegramMessage("Прибыль: " + output);
-    if(message.ok) {
-        const response = await setBotData(bot);
-        if(response.message) {
-            return false;
-        }
-        else {
-            return true;
-        }
-    }
-    else {
-        return false;
-    }
-
-}
-
 function generateTotal(type, currency, arr) {
     let totalAmount = null;
     let totalSum = null
@@ -300,53 +254,6 @@ function generateTotal(type, currency, arr) {
     }
 }
 
-async function checkForTelegramDollarValue(value) {
-
-    if(bot.dollarValue !== 3 && value > 10000) {
-        bot.dollarValue = 3;
-        const response = await setBotData(bot);
-        if (!response.message) {
-            const message = await sendTelegramMessage("Доллар+больше+10000");
-            if (!message.ok) {
-                console.log('Error in telegram message')
-            }
-        }
-    }
-    if(bot.dollarValue !== 2 && value > 5000 && value < 10000) {
-        bot.dollarValue = 2;
-        const response = await setBotData(bot);
-        if (!response.message) {
-            const message = await sendTelegramMessage("Доллар+меньше+10000");
-            if (!message.ok) {
-                console.log('Error in telegram message')
-            }
-        }
-    }
-    if(bot.dollarValue !== 1 && value > 2000 && value < 5000) {
-        bot.dollarValue = 1;
-        const response = await setBotData(bot);
-        if (!response.message) {
-            const message = await sendTelegramMessage("Доллар+меньше+5000");
-            if (!message.ok) {
-                console.log('Error in telegram message')
-            }
-        }
-    }
-    if(bot.dollarValue !== 0 && value < 2000) {
-        bot.dollarValue = 0;
-        const response = await setBotData(bot);
-        if (!response.message) {
-            const message = await sendTelegramMessage("Доллар+меньше+2000");
-            if (!message.ok) {
-                console.log('Error in telegram message')
-            }
-        }
-    }
-    else {
-        return false;
-    }
-}
-
 function setTotalChanges(obj) {
     document.querySelectorAll('div[data-total]').forEach((dom) => dom.innerHTML = "");
     if(obj && obj["buy-dollar"]?.length > 0) {
@@ -355,6 +262,7 @@ function setTotalChanges(obj) {
     if(obj && obj["sale-dollar"]?.length > 0) {
         generateTotal('sale', 'dollar', obj["sale-dollar"]);
     }
+
     if(obj && obj["buy-euro"]?.length > 0) {
         generateTotal('buy', 'euro', obj["buy-euro"]);
     }
@@ -362,33 +270,12 @@ function setTotalChanges(obj) {
         generateTotal('sale', 'euro', obj["sale-euro"]);
     }
 
-    setTimeout(() => {
-        if(selectedDay === now.getFullYear()+"-"+(month)+"-"+(day)) {
-            const dollar = document.querySelector('#existing-current .dollar').innerHTML;
-            if(dollar) {
-                const dollarCheck = checkForTelegramDollarValue(parseInt(dollar));
-                if(!dollarCheck) {
-                    console.log('Error in sending telegram message')
-                }
-            }
-            if(now.getHours() >= 18 && !bot.totalSend) {
-                const check = checkForTelegramTotal();
-                if(!check) {
-                    console.log('Error in sending telegram message')
-                }
-            }
-            if(now.getHours() < 18 && bot.totalSend) {
-                bot.totalSend = false;
-                const response = setBotData(bot);
-                if(!response.message) {
-                    bot.totalSend = true;
-                }
-                if(response.message) {
-                    console.log('Error in sending telegram message')
-                }
-            }
-        }
-    }, 0)
+    if(obj && obj["buy-zloty"]?.length > 0) {
+        generateTotal('buy', 'zloty', obj["buy-zloty"]);
+    }
+    if(obj && obj["sale-zloty"]?.length > 0) {
+        generateTotal('sale', 'zloty', obj["sale-zloty"]);
+    }
 }
 
 function handleAddRow() {
@@ -439,7 +326,7 @@ function getExistenceValue(object, currency) {
     if(currency === 'hryvnia') {
         let buyHryvnia = null;
         let saleHryvnia = null;
-        let arr = ['dollar', 'euro'];
+        let arr = ['dollar', 'euro', 'zloty'];
         arr.map((el) => {
             if(object[`buy-${el}`] && object[`buy-${el}`].length > 0) {
                 object[`buy-${el}`].map((obj) => {
@@ -487,10 +374,7 @@ function setExistence(object, currency) {
 }
 
 async function setTable(data) {
-    buyDollarTable.innerHTML = null;
-    buyEuroTable.innerHTML = null;
-    saleDollarTable.innerHTML = null;
-    saleEuroTable.innerHTML = null;
+    clearTables();
 
     if(data["buy-dollar"]?.length > 0) {
         data["buy-dollar"].map((obj) => {
@@ -519,6 +403,22 @@ async function setTable(data) {
             saleEuroTable.innerHTML = saleEuroTable.innerHTML + row;
         });
     }
+
+    if(data["buy-zloty"]?.length > 0) {
+        data["buy-zloty"].map((obj) => {
+            const row = createRow('buy-zloty', obj);
+            buyZlotyTable.innerHTML = buyZlotyTable.innerHTML + row;
+        });
+    }
+
+    if(data["sale-zloty"]?.length > 0) {
+        data["sale-zloty"].map((obj) => {
+            const row = createRow('sale-zloty', obj);
+            saleZlotyTable.innerHTML = saleZlotyTable.innerHTML + row;
+        });
+    }
+
+
 
     setTotalChanges(data);
 
@@ -550,7 +450,7 @@ async function checkForBinId(data, year, month) {
 
         newData[year][month] = response?.metadata?.id;
 
-        const putResponse = setNewData(newData, '62af311e402a5b38022f1d09');
+        const putResponse = setNewData(newData, '63a42a3415ab31599e2286db');
 
         if(!putResponse.message) {
             return response?.metadata?.id;
@@ -578,7 +478,7 @@ async function setStorageUrl() {
         return false;
     }
 
-    const response = await fetch(url + '/62af311e402a5b38022f1d09/latest', {
+    const response = await fetch(url + '/63a42a3415ab31599e2286db/latest', {
         method: 'GET',
         headers: {
             'Content-type': 'application/json',
@@ -650,13 +550,18 @@ async function getData() {
             apiData[selectedDay] = {
                 "buy-euro": [],
                 "sale-euro": [],
+
                 "buy-dollar": [],
                 "sale-dollar": [],
+
+                "buy-zloty": [],
+                "sale-zloty": [],
             }
 
             let existence = {
                 "dollar": setExistence(apiData[selectedDay], "dollar"),
                 "euro": setExistence(apiData[selectedDay], "euro"),
+                "zloty": setExistence(apiData[selectedDay], "zloty"),
                 "hryvnia": setExistence(apiData[selectedDay], "hryvnia"),
             }
             apiData[selectedDay]["existence-morning"] = existence;
@@ -688,8 +593,12 @@ async function putData(type, currency, obj) {
         apiData[selectedDay] = {
             "buy-euro": [],
             "sale-euro": [],
+
             "buy-dollar": [],
             "sale-dollar": [],
+
+            "buy-zloty": [],
+            "sale-zloty": [],
         }
         apiData[selectedDay][`${type}-${currency}`].push(obj);
     };
@@ -744,7 +653,7 @@ async function setMorningValue(e, currency) {
     }
 }
 function setExistingHandles() {
-    let arr = ['dollar', 'euro', 'hryvnia'];
+    let arr = ['dollar', 'euro', 'zloty', 'hryvnia'];
     arr.map((currency) => {
         document.querySelector(`#existing-morning .${currency}-tab`).addEventListener('dblclick', () => {
             if(!(selectedDay === now.getFullYear()+"-"+(month)+"-"+(day))) {
@@ -770,13 +679,9 @@ async function checkForPass() {
         }
     }
     else {
-        const response = await getBotData(pass);
+        const response = await getAccess(pass);
         if(!response?.message) {
             localStorage.setItem('masterKey', pass);
-            bot.token = response["record"]["token"];
-            bot.id = response["record"]["id"];
-            bot.dollarValue = response["record"]["dollarValue"];
-            bot.totalSend = response["record"]["totalSend"];
             masterKey = pass;
         }
         else {
