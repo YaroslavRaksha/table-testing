@@ -672,9 +672,11 @@ async function checkForPass() {
     let pass = localStorage.getItem('masterKey') ? localStorage.getItem('masterKey') : prompt('Введите пароль');
     if(pass === null || pass === "") {
         if(confirm('Введите действительный пароль')) {
+            localStorage.removeItem('masterKey')
             return checkForPass();
         }
         else {
+            localStorage.removeItem('masterKey')
             return false;
         }
     }
@@ -686,9 +688,11 @@ async function checkForPass() {
         }
         else {
             if(confirm('Введите действительный пароль')) {
+                localStorage.removeItem('masterKey')
                 return checkForPass();
             }
             else {
+                localStorage.removeItem('masterKey')
                 return false;
             }
         }
