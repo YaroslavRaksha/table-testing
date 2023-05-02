@@ -4,6 +4,7 @@
 
 const url = "https://api.jsonbin.io/v3/b";
 let binId = "";
+let isCreatingStorage = false;
 
 let masterKey = "$2b$10$T9HHK.hwCaMU6x5d6YGp8OeoIHVUBqx7K4NqcuPSJzxv8olGNjawi";
 
@@ -419,7 +420,7 @@ async function setTable(data) {
     }
 
 
-
+    
     setTotalChanges(data);
 
     if(data["existence-morning"]) {
@@ -429,8 +430,9 @@ async function setTable(data) {
 }
 
 async function checkForBinId(data, year, month) {
-    let binName = `${year}-${month}`;
 
+    let binName = `${year}-${month}`;
+    isCreatingStorage = true;
     const response = await fetch(url, {
         method: 'POST',
         headers: {
@@ -450,8 +452,8 @@ async function checkForBinId(data, year, month) {
 
         newData[year][month] = response?.metadata?.id;
 
-        const putResponse = setNewData(newData, '62af311e402a5b38022f1d09');
-
+        const putResponse = await setNewData(newData, '62af311e402a5b38022f1d09');
+        isCreatingStorage = false;
         if(!putResponse.message) {
             return response?.metadata?.id;
         }
@@ -494,11 +496,12 @@ async function setStorageUrl() {
         return responseUrl;
     }
 
-    if(!responseUrl) {
-
-
+    if(!responseUrl && !isCreatingStorage) {
         const binId = checkForBinId(responseData, selectedYear, months[selectedMonth]);
         return binId;
+    }
+    else {
+        alert('Перезагрузите страницу.')
     }
 }
 
